@@ -1,160 +1,112 @@
+Below is a complete, professional README you can paste directly into `README.md`.
+
+---
+
 # SovereignDroid
 
-
-**Status**: 🟢 Native Character Movement & Facing Implemented  
-**Phase**: 3.1 (Native Input & Visual Feedback)  
-**Date**: 2026-02-12
+Native Android engine built without Java UI layers, emulators, or virtual machines.
+SovereignDroid is a C/C++–driven Android NativeActivity application designed to provide a minimal, high-control rendering and input stack.
 
 ---
 
-## What Is This?
+## Overview
 
-SovereignDroid is a **controlled engineering platform** for Android development.
+SovereignDroid is a fully native Android application built using:
 
-This is not an app framework.  
-This is not a feature-complete application.  
+* Android NDK
+* NativeActivity
+* OpenGL ES
+* CMake
+* Gradle (as build orchestrator only)
 
-This is a **baseline** for building sovereignty-focused capabilities on Android.
+There is no Java UI layer. No Jetpack. No XML layouts.
+Rendering, input, and lifecycle handling are controlled entirely from native code.
 
----
+This project exists to:
 
-## New: Character Movement & Facing (2026-02-12)
-
-- Character now visually rotates to face the direction of movement on the ground (native OpenGL renderer)
-- Facing direction is smooth and matches both X (red) and Z (blue) axes
-- All movement and facing logic is implemented natively in C (see `renderer.c`)
-- Touch input sets movement target; character walks and turns correctly
-
----
-
----
-
-## Current Status
-
-### ✅ Phase 0.1 - Baseline Verified (2026-02-12)
-- Environment contract defined (`DEV_ENV.md`)
-- Version baseline locked (`VERSION_LOCK.md`)
-- Architecture decisions documented (`ARCHITECTURE.md`)
-- Operational workflows standardized and tested
-- Deterministic builds confirmed
-
-### ✅ Phase 1 - Native Core Bootstrap Complete (2026-02-12)
-- Native library builds (`libsovereign_core.so`)
-- JNI integration functional
-- Native logging operational
-- Platform control validated
-- CMake toolchain proven
-
-### ✅ Phase 2 - Device Capability Enumeration (COMPLETE - 2026-02-12)
-- Native capability query functions operational
-- CPU architecture and core detection verified (arm64-v8a, 8 cores)
-- Security status checks functional (SELinux, debug, encryption)
-- Build information accurate (Samsung SM-S938U, Android 16, API 36)
-- JSON-formatted capability reporting working
-- Hardware introspection proven
-
-**Verified on**: Samsung SM-S938U, Android 16 (API 36)
-
-See: [PHASE_2.md](PHASE_2.md) for complete verification results
-
-### � Phase 3 - Secure Local Storage (IMPLEMENTED - READY TO TEST)
-- AES-256-GCM authenticated encryption
-- Native cryptographic operations (OpenSSL/BoringSSL)
-- Encrypted key-value storage in app private storage
-- GCM authentication prevents tampering
-- Ephemeral key generation (256-bit)
-- Round-trip encrypt/decrypt/verify cycle
-
-**Test Phase 3 now**:
-```powershell
-.\gradlew clean
-.\gradlew assembleDebug
-adb install -r app\build\outputs\apk\debug\app-debug.apk
-adb logcat -c
-adb shell am start -n com.sovereigndroid.core/com.sovereigndroid.core.MainActivity
-adb logcat -d --pid=$(adb shell pidof com.sovereigndroid.core) | Select-String "Phase 3|SecureStorage"
-```
-
-See: [PHASE_3.md](PHASE_3.md) for verification details and tampering tests
-
-
-### 🔵 Next: Define Phase 4
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- JDK 17
-- Android SDK with platform 36
-- Physical Android device (API 24+)
-- USB debugging enabled
-
-### First Time Setup
-
-1. **Set environment variables**:
-   ```bash
-   export JAVA_HOME=/path/to/jdk-17
-   export ANDROID_HOME=/path/to/android-sdk
-   ```
-
-2. **Validate environment**:
-   ```bash
-   source env.sh
-   ```
-   or
-   ```bash
-   make check
-   ```
-
-3. **Connect device**:
-   ```bash
-   adb devices  # Should show your device
-   ```
-
-### Build and Run
-
-```bash
-./dev.sh
-```
-
-or
-
-```bash
-make run
-```
-
-This will:
-1. Build debug APK
-2. Install to device
-3. Launch application
-
-### View Logs
-
-```bash
-./log.sh
-```
-
-or
-
-```bash
-make log
-```
+* Build a minimal Android-native game/runtime engine
+* Maintain strict compiler hygiene (`-Wall -Werror`)
+* Provide deterministic rendering control
+* Avoid heavy framework abstraction
 
 ---
 
 ## Architecture
 
-### Principles
+```
+Android System
+    ↓
+NativeActivity (Android framework entry point)
+    ↓
+android_main()
+    ↓
+Core Engine Loop
+    ↓
+Renderer / Input / Game Systems
+```
 
-- **Physical device only** - No emulator support
-- **Minimal modules** - Single `app` module initially
-- **No Compose** - XML layouts for MVP
-- **Controlled dependencies** - Essential AndroidX only
-- **Deterministic builds** - Version locked and stable
+### Core Components
 
-See: [ARCHITECTURE.md](ARCHITECTURE.md)
+| Component        | Responsibility                   |
+| ---------------- | -------------------------------- |
+| `android_main()` | Application entry                |
+| Renderer         | OpenGL ES context, frame drawing |
+| Input System     | Touch & event handling           |
+| Engine Loop      | Update + Render cycle            |
+| CMake Build      | Native compilation               |
+| Gradle           | APK packaging only               |
+
+Strict compilation flags are enforced:
+
+```
+-Wall -Werror
+```
+
+Warnings fail the build by design.
+
+---
+
+## Build Requirements
+
+* Windows 10/11 (tested)
+* Android Studio
+* Android SDK
+* Android NDK
+* ADB configured in PATH
+
+---
+
+## Build Instructions (PowerShell)
+
+From project root:
+
+```powershell
+.\gradlew.bat clean assembleDebug
+```
+
+Install to device:
+
+```powershell
+adb install -r app\build\outputs\apk\debug\app-debug.apk
+```
+
+Launch:
+
+```powershell
+adb shell am start -n com.sovereigndroid.core/android.app.NativeActivity
+```
+
+Clear logs before debugging:
+
+```powershell
+adb logcat -c
+```
+
+View logs:
+
+```powershell
+adb logcat -s SovereignNative:* SovereignRenderer:* SovereignInput:*
+```
 
 ---
 
@@ -162,165 +114,89 @@ See: [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ```
 SovereignDroid/
-├── app/                         # Application module
+│
+├── app/
 │   └── src/main/
+│       ├── cpp/            # Native engine source
 │       ├── AndroidManifest.xml
-│       ├── java/com/sovereigndroid/core/
-│       │   └── MainActivity.kt
-│       └── res/
-├── gradle/                      # Gradle configuration
-│   ├── libs.versions.toml      # Version catalog
-│   └── wrapper/
-├── DEV_ENV.md                  # 🔒 Environment contract
-├── VERSION_LOCK.md             # 🔒 Version baseline
-├── ARCHITECTURE.md             # 🔒 Design decisions
-├── BASELINE_VERIFICATION.md    # 🔴 Required next step
-├── PHASE_1.md                  # 🔵 After verification
-├── env.sh                      # 🔧 Environment setup
-├── dev.sh                      # 🚀 Primary workflow
-├── clean.sh                    # 🧹 Clean utility
-├── log.sh                      # 📊 Logging utility
-├── Makefile                    # 📋 Standard interface
+│       └── CMakeLists.txt
+│
+├── gradle/                 # Gradle wrapper
 ├── build.gradle.kts
-└── settings.gradle.kts
+├── settings.gradle.kts
+├── ARCHITECTURE.md
+├── ROADMAP.md
+└── PHASE_*.md
 ```
 
 ---
 
-## Development Workflow
+## Development Principles
 
-### Standard Commands
-
-| Command | Purpose |
-|---------|---------|
-| `./dev.sh` | Build, install, and launch |
-| `./clean.sh` | Clean build artifacts |
-| `./log.sh` | View application logs |
-| `make run` | Same as `./dev.sh` |
-| `make build` | Build only |
-| `make check` | Validate environment |
-
-### Workflow Rules
-
-1. **Always source environment first**:
-   ```bash
-   source env.sh
-   ```
-
-2. **Use provided scripts** - Do not manually invoke Gradle or adb unless debugging
-
-3. **Clean before major changes**:
-   ```bash
-   ./clean.sh && ./dev.sh
-   ```
-
-4. **Check logs after launch**:
-   ```bash
-   ./log.sh
-   ```
+* No emulator-first design (device-native testing)
+* No unnecessary dependencies
+* No database backends
+* No external engines
+* Explicit memory control
+* Strict compiler enforcement
+* Transparent rendering pipeline
 
 ---
 
-## Next Steps for Engineers
+## Roadmap
 
-### 🔴 Immediate: Phase 0.1
+Planned progression:
 
-**Verify the baseline before any development.**
+* Phase 1 – Window + Render Loop Baseline
+* Phase 2 – Stable Frame Draw + Logging
+* Phase 3 – Input Handling
+* Phase 4 – Camera + World System
+* Phase 5 – Character System
+* Future – Scene Graph, Asset Pipeline, Game Logic Layer
 
-Follow: [BASELINE_VERIFICATION.md](BASELINE_VERIFICATION.md)
-
-You must prove:
-1. Clean machine setup works
-2. Build is deterministic
-3. Workflow is reproducible
-4. Documentation is accurate
-
-**Do not proceed until verification is complete and signed off.**
+See `ROADMAP.md` and phase documents for detailed planning.
 
 ---
 
-### � Phase 1 - Native Core Bootstrap
+## Current Status
 
-**Status**: ✅ VERIFIED - Phase Complete (2026-02-12)
+Engine baseline operational:
 
-Follow: [PHASE_1.md](PHASE_1.md)
+* NativeActivity lifecycle functional
+* EGL context initialization
+* Render loop active
+* Logging framework established
 
-**Verified Results**:
-- ✅ Native library builds and loads (`libsovereign_core.so`)
-- ✅ JNI bridge functional (Kotlin ↔ C)
-- ✅ CMake toolchain operational
-- ✅ Native logging works from C layer
-- ✅ No crashes, no JNI errors
-- ✅ Platform control validated
+Active development:
 
-**Proven Capabilities**:
-- Low-level native code execution
-- Kotlin ↔ C communication via JNI
-- Native logging infrastructure
-- ABI stability (arm64-v8a)
-
-**Platform foundation complete. Ready for Phase 2.**
+* Character rendering
+* Camera configuration (isometric angle)
+* Engine modularization
 
 ---
 
-## What NOT to Do
+## Philosophy
 
-❌ Add features  
-❌ Add UI complexity  
-❌ Add Compose  
-❌ Add networking  
-❌ Add CI/CD  
-❌ Add modules  
-❌ Refactor existing code  
-❌ Upgrade dependencies without reason  
+SovereignDroid is designed to remove abstraction layers and reclaim full control over the Android execution environment.
 
-**Lock the foundation first.**
+It prioritizes:
+
+* Determinism
+* Performance clarity
+* Compiler strictness
+* Minimal runtime overhead
 
 ---
 
-## Upgrade Policy
+## License
 
-All version changes require:
-1. Update `VERSION_LOCK.md` first
-2. Document reason
-3. Re-validate baseline
-4. Update `DEV_ENV.md` if environment changes
-5. Commit with clear message
-
-See: [VERSION_LOCK.md](VERSION_LOCK.md)
+Specify your license here (MIT recommended if open-source).
 
 ---
 
-## Documentation Index
+If you want, I can also provide:
 
-| Document | Purpose |
-|----------|---------|
-| [README.md](README.md) | This file - project overview |
-| [DEV_ENV.md](DEV_ENV.md) | Environment requirements and setup |
-| [VERSION_LOCK.md](VERSION_LOCK.md) | Exact version specifications |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Design decisions and constraints |
-| [BASELINE_VERIFICATION.md](BASELINE_VERIFICATION.md) | Phase 0.1 verification steps |
-| [PHASE_1.md](PHASE_1.md) | Native core bootstrap specification |
-
----
-
-## Critical Principle
-
-**You do not build on unverified infrastructure.**
-
-Validate each phase completely before proceeding to the next.
-
----
-
-## Questions?
-
-1. Read `DEV_ENV.md` for environment setup
-2. Read `ARCHITECTURE.md` for design decisions
-3. Read `VERSION_LOCK.md` for version policy
-4. Follow `BASELINE_VERIFICATION.md` for next steps
-
----
-
-**Established**: 2026-02-12  
-**Status**: Native character movement and facing direction fully implemented and visually correct. Baseline established, verification required for next phases.  
-**Philosophy**: Controlled growth, deliberate decisions, proven foundations
+* A cleaner “public-facing” version
+* A more technical engine-developer version
+* A minimalist hacker-style version
+* A polished GitHub-featured version with badges
