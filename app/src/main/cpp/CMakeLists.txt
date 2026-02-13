@@ -4,15 +4,29 @@
 
 cmake_minimum_required(VERSION 3.22.1)
 
+# Ensure NDK path is set for includes
+if(DEFINED ANDROID_NDK)
+    set(NDK_PATH ${ANDROID_NDK})
+elseif(DEFINED ANDROID_NDK_ROOT)
+    set(NDK_PATH ${ANDROID_NDK_ROOT})
+elseif(DEFINED CMAKE_ANDROID_NDK)
+    set(NDK_PATH ${CMAKE_ANDROID_NDK})
+else()
+    message(FATAL_ERROR "ANDROID_NDK variable not set. Please set the NDK path.")
+endif()
+string(REPLACE "\\" "/" NDK_PATH ${NDK_PATH})
+
+message(STATUS "[CMake Debug] Using NDK path: ${NDK_PATH}")
+
 # Project declaration
 project("sovereign_core" C)
 
 # Add android_native_app_glue for NativeActivity support
 # This is required for android_main() entry point
 add_library(app-glue STATIC
-    ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c)
+    ${NDK_PATH}/sources/android/native_app_glue/android_native_app_glue.c)
 target_include_directories(app-glue PUBLIC
-    ${ANDROID_NDK}/sources/android/native_app_glue)
+    ${NDK_PATH}/sources/android/native_app_glue)
 
 # Create shared library from native source
 add_library(
@@ -32,7 +46,11 @@ add_library(
 
 # Include android_native_app_glue headers
 target_include_directories(sovereign_core PRIVATE
-    ${ANDROID_NDK}/sources/android/native_app_glue)
+    ${NDK_PATH}/sources/android/native_app_glue
+    ${NDK_PATH}/sysroot/usr/include
+    ${NDK_PATH}/sysroot/usr/include/android
+    ${NDK_PATH}/sysroot/usr/include/GLES3
+)
 
 # Find required Android libraries
 find_library(log_lib log)

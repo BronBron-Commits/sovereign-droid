@@ -1,3 +1,22 @@
+// Helper: add a box with alpha to vertex buffer (12 triangles, 36 vertices, 7 floats per vertex)
+static void add_box_alpha(float* v, int* idx, float cx, float cy, float cz, float width, float height, float depth, float r, float g, float b, float a) {
+    float hw = width * 0.5f, hh = height * 0.5f, hd = depth * 0.5f;
+    float x0 = cx - hw, x1 = cx + hw;
+    float y0 = cy - hh, y1 = cy + hh;
+    float z0 = cz - hd, z1 = cz + hd;
+    float face[6][3] = {{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y0,z1},{x1,y1,z1},{x0,y1,z1}};
+    for(int i=0;i<6;i++) { v[*idx]=face[i][0]; v[*idx+1]=face[i][1]; v[*idx+2]=face[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+    float back[6][3] = {{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y0,z0},{x0,y1,z0},{x1,y1,z0}};
+    for(int i=0;i<6;i++) { v[*idx]=back[i][0]; v[*idx+1]=back[i][1]; v[*idx+2]=back[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+    float left[6][3] = {{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y0,z0},{x0,y1,z1},{x0,y1,z0}};
+    for(int i=0;i<6;i++) { v[*idx]=left[i][0]; v[*idx+1]=left[i][1]; v[*idx+2]=left[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+    float right[6][3] = {{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y0,z1},{x1,y1,z0},{x1,y1,z1}};
+    for(int i=0;i<6;i++) { v[*idx]=right[i][0]; v[*idx+1]=right[i][1]; v[*idx+2]=right[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+    float top[6][3] = {{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},{x0,y1,z1},{x1,y1,z0},{x0,y1,z0}};
+    for(int i=0;i<6;i++) { v[*idx]=top[i][0]; v[*idx+1]=top[i][1]; v[*idx+2]=top[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+    float bot[6][3] = {{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},{x0,y0,z0},{x1,y0,z1},{x0,y0,z1}};
+    for(int i=0;i<6;i++) { v[*idx]=bot[i][0]; v[*idx+1]=bot[i][1]; v[*idx+2]=bot[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
+}
 /*
  * SovereignDroid Native Renderer - Implementation
  * 
@@ -34,8 +53,8 @@ static const char* vertex_shader_source =
     "#version 300 es\n"
     "precision mediump float;\n"
     "layout(location = 0) in vec3 aPosition;\n"
-    "layout(location = 1) in vec3 aColor;\n"
-    "out vec3 vColor;\n"
+    "layout(location = 1) in vec4 aColor;\n"
+    "out vec4 vColor;\n"
     "uniform mat4 uMVP;\n"
     "void main() {\n"
     "    gl_Position = uMVP * vec4(aPosition, 1.0);\n"
@@ -46,10 +65,10 @@ static const char* vertex_shader_source =
 static const char* fragment_shader_source =
     "#version 300 es\n"
     "precision mediump float;\n"
-    "in vec3 vColor;\n"
+    "in vec4 vColor;\n"
     "out vec4 FragColor;\n"
     "void main() {\n"
-    "    FragColor = vec4(vColor, 1.0);\n"
+    "    FragColor = vColor;\n"
     "}\n";
 
 // Textured vertex shader
@@ -850,23 +869,51 @@ static int init_opengl(renderer_state_t* renderer) {
         LOGE("Failed to allocate ground geometry");
         return -1;
     }
-    
     glGenVertexArrays(1, &renderer->ground_vao);
     glBindVertexArray(renderer->ground_vao);
     glGenBuffers(1, &renderer->ground_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, renderer->ground_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(float) * ground.vertex_count * 5, ground.data, GL_STATIC_DRAW);
-    // Position attribute (location 0): 3 floats
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // TexCoord attribute (location 1): 2 floats
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-    
     renderer->ground_vertex_count = ground.vertex_count;
     free(ground.data);
+
+    // Wall geometry (4 boxes around the floor)
+    float wall_thickness = 0.1f * ground_size;
+    float wall_height = ground_size * 0.5f;
+    float half = ground_size;
+    int wall_boxes = 4;
+    int box_vertices = 36; // 12 triangles * 3 vertices
+    int wall_vertex_count = wall_boxes * box_vertices;
+    float* wall_data = (float*)malloc(sizeof(float) * wall_vertex_count * 7);
+    int idx = 0;
+    float r = 0.6f, g = 0.6f, b = 0.7f, a = 0.4f;
+    // +X wall
+    add_box_alpha(wall_data, &idx, half, wall_height/2, 0.0f, wall_thickness, wall_height, ground_size*2+wall_thickness, r, g, b, a);
+    // -X wall
+    add_box_alpha(wall_data, &idx, -half, wall_height/2, 0.0f, wall_thickness, wall_height, ground_size*2+wall_thickness, r, g, b, a);
+    // +Z wall
+    add_box_alpha(wall_data, &idx, 0.0f, wall_height/2, half, ground_size*2+wall_thickness, wall_height, wall_thickness, r, g, b, a);
+    // -Z wall
+    add_box_alpha(wall_data, &idx, 0.0f, wall_height/2, -half, ground_size*2+wall_thickness, wall_height, wall_thickness, r, g, b, a);
+    glGenVertexArrays(1, &renderer->wall_vao);
+    glBindVertexArray(renderer->wall_vao);
+    glGenBuffers(1, &renderer->wall_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->wall_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * wall_vertex_count * 7, wall_data, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindVertexArray(0);
+    renderer->wall_vertex_count = wall_vertex_count;
+    free(wall_data);
     
     // Create checkerboard texture (256x256, 32 pixel checkers)
     renderer->ground_texture = create_checkerboard_texture(256, 32);
@@ -1075,12 +1122,21 @@ int renderer_draw_frame(renderer_state_t* renderer) {
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    // Switch to color shader for cursor/character (grid removed)
+    // Draw walls (color shader)
     glUseProgram(renderer->shader_program);
     GLint mvp_loc = glGetUniformLocation(renderer->shader_program, "uMVP");
     if (mvp_loc < 0 && !logged_once) {
         LOGE("uMVP uniform not found");
     }
+    mat4_t wall_model = mat4_translate(0.0f, 0.0f, 0.0f);
+    mat4_t wall_view = mat4_mul(&view, &wall_model);
+    mat4_t wall_mvp = mat4_mul(&proj, &wall_view);
+    if (mvp_loc >= 0) {
+        glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, wall_mvp.m);
+    }
+    glBindVertexArray(renderer->wall_vao);
+    glDrawArrays(GL_TRIANGLES, 0, renderer->wall_vertex_count);
+    glBindVertexArray(0);
 
     // Draw cursor marker
     mat4_t cursor_model = mat4_translate(renderer->cursor_x, renderer->cursor_y, renderer->cursor_z);

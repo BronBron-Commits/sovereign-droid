@@ -49,6 +49,10 @@ typedef struct {
     GLuint ground_vao;
     GLuint ground_texture;
     GLuint character_texture;
+    // Wall rendering
+    GLuint wall_vbo;
+    GLuint wall_vao;
+    int wall_vertex_count;
     int grid_vertex_count;
     int cursor_vertex_count;
     int character_vertex_count;
