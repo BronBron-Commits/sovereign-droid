@@ -1085,7 +1085,8 @@ int renderer_draw_frame(renderer_state_t* renderer) {
     // Expand ortho to fit 2x2 grid
     float ortho_height = (float)renderer->grid_half_extent * renderer->grid_spacing * 2.5f * renderer->zoom_factor;
     float ortho_width = ortho_height * aspect;
-    mat4_t proj = mat4_ortho(-ortho_width, ortho_width, -ortho_height, ortho_height, -20.0f, 20.0f);
+    // Expand near/far planes to prevent clipping
+    mat4_t proj = mat4_ortho(-ortho_width, ortho_width, -ortho_height, ortho_height, -100.0f, 100.0f);
     mat4_t rot_x = mat4_rotate_x(ISO_PITCH_DEG * PI / 180.0f);
     mat4_t rot_y = mat4_rotate_y(ISO_YAW_DEG * PI / 180.0f);
     mat4_t view = mat4_mul(&rot_y, &rot_x);
