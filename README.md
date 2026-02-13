@@ -1,7 +1,8 @@
 # SovereignDroid
 
-**Status**: 🟡 Baseline Established - Verification Required  
-**Phase**: 0.1 (Baseline Verification)  
+
+**Status**: 🟢 Native Character Movement & Facing Implemented  
+**Phase**: 3.1 (Native Input & Visual Feedback)  
 **Date**: 2026-02-12
 
 ---
@@ -12,7 +13,19 @@ SovereignDroid is a **controlled engineering platform** for Android development.
 
 This is not an app framework.  
 This is not a feature-complete application.  
+
 This is a **baseline** for building sovereignty-focused capabilities on Android.
+
+---
+
+## New: Character Movement & Facing (2026-02-12)
+
+- Character now visually rotates to face the direction of movement on the ground (native OpenGL renderer)
+- Facing direction is smooth and matches both X (red) and Z (blue) axes
+- All movement and facing logic is implemented natively in C (see `renderer.c`)
+- Touch input sets movement target; character walks and turns correctly
+
+---
 
 ---
 
@@ -63,6 +76,7 @@ adb logcat -d --pid=$(adb shell pidof com.sovereigndroid.core) | Select-String "
 ```
 
 See: [PHASE_3.md](PHASE_3.md) for verification details and tampering tests
+
 
 ### 🔵 Next: Define Phase 4
 
@@ -308,5 +322,5 @@ Validate each phase completely before proceeding to the next.
 ---
 
 **Established**: 2026-02-12  
-**Status**: Baseline established, verification required  
+**Status**: Native character movement and facing direction fully implemented and visually correct. Baseline established, verification required for next phases.  
 **Philosophy**: Controlled growth, deliberate decisions, proven foundations
