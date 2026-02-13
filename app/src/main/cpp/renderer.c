@@ -1075,25 +1075,12 @@ int renderer_draw_frame(renderer_state_t* renderer) {
     glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
     
-    // Switch to color shader for grid/cursor/character
+    // Switch to color shader for cursor/character (grid removed)
     glUseProgram(renderer->shader_program);
     GLint mvp_loc = glGetUniformLocation(renderer->shader_program, "uMVP");
     if (mvp_loc < 0 && !logged_once) {
         LOGE("uMVP uniform not found");
     }
-
-    // Draw grid (no rotation)
-    mat4_t grid_identity = mat4_translate(0.0f, 0.0f, 0.0f);
-    mat4_t grid_view = mat4_mul(&view, &grid_identity);
-    mat4_t grid_mvp = mat4_mul(&proj, &grid_view);
-    if (mvp_loc >= 0) {
-        glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, grid_mvp.m);
-    }
-
-    glLineWidth(1.0f);
-    glBindVertexArray(renderer->grid_vao);
-    glDrawArrays(GL_LINES, 0, renderer->grid_vertex_count);
-    glBindVertexArray(0);
 
     // Draw cursor marker
     mat4_t cursor_model = mat4_translate(renderer->cursor_x, renderer->cursor_y, renderer->cursor_z);
