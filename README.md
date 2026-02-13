@@ -1,7 +1,3 @@
-Below is a complete, professional README you can paste directly into `README.md`.
-
----
-
 # SovereignDroid
 
 Native Android engine built without Java UI layers, emulators, or virtual machines.
@@ -190,13 +186,4 @@ It prioritizes:
 
 ## License
 
-Specify your license here (MIT recommended if open-source).
-
----
-
-If you want, I can also provide:
-
-* A cleaner “public-facing” version
-* A more technical engine-developer version
-* A minimalist hacker-style version
-* A polished GitHub-featured version with badges
+MIT
