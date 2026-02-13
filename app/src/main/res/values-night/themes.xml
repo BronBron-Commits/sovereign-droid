@@ -1,0 +1,6 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Pure Native App Theme - Night (no Material Design needed) -->
+    <style name="Base.Theme.Sovereigndroid" parent="android:Theme.Black.NoTitleBar.Fullscreen">
+        <!-- Native app runs fullscreen with no Android UI -->
+    </style>
+</resources>
