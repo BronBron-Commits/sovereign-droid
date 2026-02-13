@@ -1,22 +1,4 @@
-// Helper: add a box with alpha to vertex buffer (12 triangles, 36 vertices, 7 floats per vertex)
-static void add_box_alpha(float* v, int* idx, float cx, float cy, float cz, float width, float height, float depth, float r, float g, float b, float a) {
-    float hw = width * 0.5f, hh = height * 0.5f, hd = depth * 0.5f;
-    float x0 = cx - hw, x1 = cx + hw;
-    float y0 = cy - hh, y1 = cy + hh;
-    float z0 = cz - hd, z1 = cz + hd;
-    float face[6][3] = {{x0,y0,z1},{x1,y0,z1},{x1,y1,z1},{x0,y0,z1},{x1,y1,z1},{x0,y1,z1}};
-    for(int i=0;i<6;i++) { v[*idx]=face[i][0]; v[*idx+1]=face[i][1]; v[*idx+2]=face[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-    float back[6][3] = {{x1,y0,z0},{x0,y0,z0},{x0,y1,z0},{x1,y0,z0},{x0,y1,z0},{x1,y1,z0}};
-    for(int i=0;i<6;i++) { v[*idx]=back[i][0]; v[*idx+1]=back[i][1]; v[*idx+2]=back[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-    float left[6][3] = {{x0,y0,z0},{x0,y0,z1},{x0,y1,z1},{x0,y0,z0},{x0,y1,z1},{x0,y1,z0}};
-    for(int i=0;i<6;i++) { v[*idx]=left[i][0]; v[*idx+1]=left[i][1]; v[*idx+2]=left[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-    float right[6][3] = {{x1,y0,z1},{x1,y0,z0},{x1,y1,z0},{x1,y0,z1},{x1,y1,z0},{x1,y1,z1}};
-    for(int i=0;i<6;i++) { v[*idx]=right[i][0]; v[*idx+1]=right[i][1]; v[*idx+2]=right[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-    float top[6][3] = {{x0,y1,z1},{x1,y1,z1},{x1,y1,z0},{x0,y1,z1},{x1,y1,z0},{x0,y1,z0}};
-    for(int i=0;i<6;i++) { v[*idx]=top[i][0]; v[*idx+1]=top[i][1]; v[*idx+2]=top[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-    float bot[6][3] = {{x0,y0,z0},{x1,y0,z0},{x1,y0,z1},{x0,y0,z0},{x1,y0,z1},{x0,y0,z1}};
-    for(int i=0;i<6;i++) { v[*idx]=bot[i][0]; v[*idx+1]=bot[i][1]; v[*idx+2]=bot[i][2]; v[*idx+3]=r; v[*idx+4]=g; v[*idx+5]=b; v[*idx+6]=a; *idx+=7; }
-}
+// ...existing code...
 /*
  * SovereignDroid Native Renderer - Implementation
  * 
@@ -25,9 +7,10 @@ static void add_box_alpha(float* v, int* idx, float cx, float cy, float cz, floa
  */
 
 
+
 #include <GLES3/gl3.h>
 #include <GLES3/gl3ext.h>
-
+#include <time.h>
 #include "renderer.h"
 #include <android/log.h>
 #include <string.h>
@@ -788,6 +771,11 @@ static int init_egl(renderer_state_t* renderer) {
 // ============================================================================
 
 static int init_opengl(renderer_state_t* renderer) {
+        // ...existing code...
+
+        // ...existing code...
+    float ground_size = (float)renderer->grid_half_extent * renderer->grid_spacing;
+
     LOGI("Initializing OpenGL resources");
     
     // Create shader program
@@ -862,8 +850,9 @@ static int init_opengl(renderer_state_t* renderer) {
     renderer->character_vertex_count = character.vertex_count;
     free(character.data);
     
-    // Ground plane geometry with texture coordinates
-    float ground_size = (float)renderer->grid_half_extent * renderer->grid_spacing;
+
+    // Ground plane geometry with texture coordinates (first floor)
+    // float ground_size = (float)renderer->grid_half_extent * renderer->grid_spacing; // Already defined above
     vertex_buffer_t ground = build_ground_vertices(ground_size);
     if (!ground.data || ground.vertex_count == 0) {
         LOGE("Failed to allocate ground geometry");
@@ -883,37 +872,32 @@ static int init_opengl(renderer_state_t* renderer) {
     renderer->ground_vertex_count = ground.vertex_count;
     free(ground.data);
 
-    // Wall geometry (4 boxes around the floor)
-    float wall_thickness = 0.1f * ground_size;
-    float wall_height = ground_size * 0.5f;
-    float half = ground_size;
-    int wall_boxes = 4;
-    int box_vertices = 36; // 12 triangles * 3 vertices
-    int wall_vertex_count = wall_boxes * box_vertices;
-    float* wall_data = (float*)malloc(sizeof(float) * wall_vertex_count * 7);
-    int idx = 0;
-    float r = 0.6f, g = 0.6f, b = 0.7f, a = 0.4f;
-    // +X wall
-    add_box_alpha(wall_data, &idx, half, wall_height/2, 0.0f, wall_thickness, wall_height, ground_size*2+wall_thickness, r, g, b, a);
-    // -X wall
-    add_box_alpha(wall_data, &idx, -half, wall_height/2, 0.0f, wall_thickness, wall_height, ground_size*2+wall_thickness, r, g, b, a);
-    // +Z wall
-    add_box_alpha(wall_data, &idx, 0.0f, wall_height/2, half, ground_size*2+wall_thickness, wall_height, wall_thickness, r, g, b, a);
-    // -Z wall
-    add_box_alpha(wall_data, &idx, 0.0f, wall_height/2, -half, ground_size*2+wall_thickness, wall_height, wall_thickness, r, g, b, a);
-    glGenVertexArrays(1, &renderer->wall_vao);
-    glBindVertexArray(renderer->wall_vao);
-    glGenBuffers(1, &renderer->wall_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, renderer->wall_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * wall_vertex_count * 7, wall_data, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+    // Second floor geometry (same size, higher Y)
+    float second_floor_y = ground_size; // Place second floor one room height above
+    vertex_buffer_t floor2 = build_ground_vertices(ground_size);
+    if (!floor2.data || floor2.vertex_count == 0) {
+        LOGE("Failed to allocate second floor geometry");
+        return -1;
+    }
+    glGenVertexArrays(1, &renderer->floor2_vao);
+    glBindVertexArray(renderer->floor2_vao);
+    glGenBuffers(1, &renderer->floor2_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, renderer->floor2_vbo);
+    // Offset all Y positions by second_floor_y
+    for (int i = 0; i < floor2.vertex_count; ++i) {
+        floor2.data[i*5+1] += second_floor_y;
+    }
+    glBufferData(GL_ARRAY_BUFFER, sizeof(float) * floor2.vertex_count * 5, floor2.data, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
-    renderer->wall_vertex_count = wall_vertex_count;
-    free(wall_data);
+    renderer->floor2_vertex_count = floor2.vertex_count;
+    free(floor2.data);
+
+
     
     // Create checkerboard texture (256x256, 32 pixel checkers)
     renderer->ground_texture = create_checkerboard_texture(256, 32);
@@ -990,9 +974,10 @@ int renderer_init(renderer_state_t* renderer, ANativeWindow* window) {
     renderer->touch2_y = 0.0f;
     renderer->prev_pinch_distance = 0.0f;
     renderer->zoom_factor = 1.0f;  // Default zoom
-    renderer->background_r = 0.1f;
-    renderer->background_g = 0.1f;
-    renderer->background_b = 0.2f;
+    // Night-time neutral blue
+    renderer->background_r = 0.05f;
+    renderer->background_g = 0.08f;
+    renderer->background_b = 0.18f;
     renderer->initialized = 1;
     renderer->rendering = 1;
 
@@ -1079,28 +1064,35 @@ void renderer_resize(renderer_state_t* renderer, int32_t width, int32_t height) 
 }
 
 int renderer_draw_frame(renderer_state_t* renderer) {
+
+    // Calculate ground_size and bridge_height for use throughout this function
+    float ground_size = (float)renderer->grid_half_extent * renderer->grid_spacing;
+
     static int logged_once = 0;
     if (!renderer || !renderer->initialized || !renderer->rendering) {
         return -1;
     }
-    
+
     // Clear screen with current background color
     glClearColor(renderer->background_r, renderer->background_g, renderer->background_b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    
+
     // Use shader program
     glUseProgram(renderer->shader_program);
 
     // Build MVP matrix
     float aspect = (renderer->height > 0) ? ((float)renderer->width / (float)renderer->height) : 1.0f;
-    float ortho_height = (float)renderer->grid_half_extent * renderer->grid_spacing * 1.2f * renderer->zoom_factor;
+    // Expand ortho to fit 2x2 grid
+    float ortho_height = (float)renderer->grid_half_extent * renderer->grid_spacing * 2.5f * renderer->zoom_factor;
     float ortho_width = ortho_height * aspect;
     mat4_t proj = mat4_ortho(-ortho_width, ortho_width, -ortho_height, ortho_height, -20.0f, 20.0f);
     mat4_t rot_x = mat4_rotate_x(ISO_PITCH_DEG * PI / 180.0f);
     mat4_t rot_y = mat4_rotate_y(ISO_YAW_DEG * PI / 180.0f);
     mat4_t view = mat4_mul(&rot_y, &rot_x);
     
-    // Draw ground plane with textured shader
+
+
+    // Draw a 2x2 grid of floors (two rows, two columns)
     glUseProgram(renderer->textured_shader_program);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, renderer->ground_texture);
@@ -1108,50 +1100,29 @@ int renderer_draw_frame(renderer_state_t* renderer) {
     if (tex_loc >= 0) {
         glUniform1i(tex_loc, 0);
     }
-    
-    mat4_t ground_model = mat4_translate(0.0f, 0.0f, 0.0f);
-    mat4_t ground_view = mat4_mul(&view, &ground_model);
-    mat4_t ground_mvp = mat4_mul(&proj, &ground_view);
     GLint textured_mvp_loc = glGetUniformLocation(renderer->textured_shader_program, "uMVP");
-    if (textured_mvp_loc >= 0) {
-        glUniformMatrix4fv(textured_mvp_loc, 1, GL_FALSE, ground_mvp.m);
+    float spacing = ground_size * 2.2f;
+    for (int row = 0; row < 2; ++row) {
+        float z = (row == 0) ? -spacing/2 : spacing/2;
+        for (int col = 0; col < 2; ++col) {
+            float x = (col == 0) ? -spacing/2 : spacing/2;
+            mat4_t ground_model = mat4_translate(x, 0.0f, z);
+            mat4_t ground_view = mat4_mul(&view, &ground_model);
+            mat4_t ground_mvp = mat4_mul(&proj, &ground_view);
+            if (textured_mvp_loc >= 0) {
+                glUniformMatrix4fv(textured_mvp_loc, 1, GL_FALSE, ground_mvp.m);
+            }
+            glBindVertexArray(renderer->ground_vao);
+            glDrawArrays(GL_TRIANGLES, 0, renderer->ground_vertex_count);
+            glBindVertexArray(0);
+        }
     }
-    
-    glBindVertexArray(renderer->ground_vao);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->ground_vertex_count);
-    glBindVertexArray(0);
     glBindTexture(GL_TEXTURE_2D, 0);
+
     
-    // Draw walls (color shader)
+    // Draw character rotated to face movement direction
     glUseProgram(renderer->shader_program);
     GLint mvp_loc = glGetUniformLocation(renderer->shader_program, "uMVP");
-    if (mvp_loc < 0 && !logged_once) {
-        LOGE("uMVP uniform not found");
-    }
-    mat4_t wall_model = mat4_translate(0.0f, 0.0f, 0.0f);
-    mat4_t wall_view = mat4_mul(&view, &wall_model);
-    mat4_t wall_mvp = mat4_mul(&proj, &wall_view);
-    if (mvp_loc >= 0) {
-        glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, wall_mvp.m);
-    }
-    glBindVertexArray(renderer->wall_vao);
-    glDrawArrays(GL_TRIANGLES, 0, renderer->wall_vertex_count);
-    glBindVertexArray(0);
-
-    // Draw cursor marker
-    mat4_t cursor_model = mat4_translate(renderer->cursor_x, renderer->cursor_y, renderer->cursor_z);
-    mat4_t cursor_view = mat4_mul(&view, &cursor_model);
-    mat4_t cursor_mvp = mat4_mul(&proj, &cursor_view);
-    if (mvp_loc >= 0) {
-        glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, cursor_mvp.m);
-    }
-
-    glLineWidth(2.0f);
-    glBindVertexArray(renderer->cursor_vao);
-    glDrawArrays(GL_LINES, 0, renderer->cursor_vertex_count);
-    glBindVertexArray(0);
-
-    // Draw character rotated to face movement direction
     mat4_t character_model = mat4_translate(renderer->character_x, renderer->character_y, renderer->character_z);
     mat4_t face_rot = mat4_rotate_y(renderer->facing_angle);
     mat4_t character_model_rot = mat4_mul(&character_model, &face_rot);
@@ -1160,9 +1131,22 @@ int renderer_draw_frame(renderer_state_t* renderer) {
     if (mvp_loc >= 0) {
         glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, character_mvp.m);
     }
-
     glBindVertexArray(renderer->character_vao);
     glDrawArrays(GL_TRIANGLES, 0, renderer->character_vertex_count);
+    glBindVertexArray(0);
+
+
+
+    // Draw cursor marker
+    mat4_t cursor_model = mat4_translate(renderer->cursor_x, renderer->cursor_y, renderer->cursor_z);
+    mat4_t cursor_view = mat4_mul(&view, &cursor_model);
+    mat4_t cursor_mvp = mat4_mul(&proj, &cursor_view);
+    if (mvp_loc >= 0) {
+        glUniformMatrix4fv(mvp_loc, 1, GL_FALSE, cursor_mvp.m);
+    }
+    glLineWidth(2.0f);
+    glBindVertexArray(renderer->cursor_vao);
+    glDrawArrays(GL_LINES, 0, renderer->cursor_vertex_count);
     glBindVertexArray(0);
 
     if (!logged_once) {
@@ -1174,6 +1158,7 @@ int renderer_draw_frame(renderer_state_t* renderer) {
         }
         logged_once = 1;
     }
+
     
     // Swap buffers
     if (!eglSwapBuffers(renderer->display, renderer->surface)) {
@@ -1255,6 +1240,17 @@ void renderer_handle_touch(renderer_state_t* renderer, float x, float y) {
     renderer->touch_x = (x / (float)renderer->width) * 2.0f - 1.0f;
     renderer->touch_y = 1.0f - (y / (float)renderer->height) * 2.0f;
 
+    // Simple double-tap detection (now only used for ladder)
+    static double last_tap_time = 0.0;
+    double now = (double)clock() / CLOCKS_PER_SEC;
+    float ground_size = (float)renderer->grid_half_extent * renderer->grid_spacing;
+    // float second_floor_y = ground_size; // Unused
+    int double_tap = 0;
+    if (now - last_tap_time < 0.35) {
+        double_tap = 1;
+    }
+    last_tap_time = now;
+
     float aspect = (renderer->height > 0) ? ((float)renderer->width / (float)renderer->height) : 1.0f;
     float ortho_height = (float)renderer->grid_half_extent * renderer->grid_spacing * 1.2f * renderer->zoom_factor;
     float ortho_width = ortho_height * aspect;
@@ -1295,16 +1291,32 @@ void renderer_handle_touch(renderer_state_t* renderer, float x, float y) {
     if (snapped_z < -extent) snapped_z = -extent;
 
     renderer->cursor_x = snapped_x;
-    renderer->cursor_y = 0.0f;
     renderer->cursor_z = snapped_z;
 
-    // Set character target to cursor position
+
+    // Bridge mechanic: if player is on the bridge, allow crossing between rooms
+    float bridge_width = ground_size * 0.3f;
+    float bridge_length = ground_size * 0.5f;
+    float bridge_x = 0.0f;
+    float bridge_z = 0.0f;
+    int on_bridge = (fabsf(snapped_x - bridge_x) < bridge_width * 0.5f && fabsf(snapped_z - bridge_z) < bridge_length * 0.5f);
+    // If double-tap and on bridge, move player to the other room
+    if (double_tap && on_bridge) {
+        if (renderer->character_x < 0.0f) {
+            renderer->character_x = ground_size * 1.1f;
+        } else {
+            renderer->character_x = -ground_size * 1.1f;
+        }
+        renderer->character_target_x = renderer->character_x;
+    }
+
+    // Set character target to cursor position (Y stays on current floor)
     renderer->character_target_x = snapped_x;
     renderer->character_target_z = snapped_z;
 
     if (renderer->cursor_vbo != 0) {
         float cursor_vertices[36];
-        fill_cursor_vertices(cursor_vertices, renderer->cursor_x, renderer->cursor_y, renderer->cursor_z, 0.2f);
+        fill_cursor_vertices(cursor_vertices, renderer->cursor_x, renderer->character_y, renderer->cursor_z, 0.2f);
         glBindBuffer(GL_ARRAY_BUFFER, renderer->cursor_vbo);
         glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(cursor_vertices), cursor_vertices);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

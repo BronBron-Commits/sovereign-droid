@@ -25,6 +25,7 @@ extern "C" {
 
 // Renderer state
 typedef struct {
+        // ...removed bridge rendering...
     // EGL state
     EGLDisplay display;
     EGLSurface surface;
@@ -45,14 +46,21 @@ typedef struct {
     GLuint cursor_vao;
     GLuint character_vbo;
     GLuint character_vao;
+
     GLuint ground_vbo;
     GLuint ground_vao;
     GLuint ground_texture;
     GLuint character_texture;
-    // Wall rendering
-    GLuint wall_vbo;
-    GLuint wall_vao;
-    int wall_vertex_count;
+    // ...removed wall rendering...
+
+    // ...removed path rendering...
+
+    // Second floor rendering
+    GLuint floor2_vbo;
+    GLuint floor2_vao;
+    int floor2_vertex_count;
+    // ...removed second floor wall rendering...
+
     int grid_vertex_count;
     int cursor_vertex_count;
     int character_vertex_count;
